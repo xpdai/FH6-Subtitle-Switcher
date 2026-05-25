@@ -7,6 +7,11 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![GUI](https://img.shields.io/badge/GUI-Tkinter-orange.svg)]()
+[![Game Version](https://img.shields.io/badge/Game-Steam%20Only-1b2838.svg)]()
+
+> ⚠️ **平台支援 / Platform Support**
+> 目前**僅支援 Steam 版** FH6。Xbox 主機版、Microsoft Store / Xbox PC App 版本暫不支援，原因見下方[平台相容性](#-平台相容性--platform-compatibility)章節。
+> Currently **Steam version only**. Xbox console and Microsoft Store / Xbox PC App versions are not supported — see [Platform Compatibility](#-平台相容性--platform-compatibility) below for details.
 
 ---
 
@@ -165,6 +170,47 @@ FH6 把使用者選的語言存在純文字檔：
 
 內容就是 2-3 byte 的語言代碼（例如 `JP` 或 `CHT`）。
 工具把這個檔覆寫成你選的語音代碼，遊戲啟動時就會自動載入對應的語言設定。
+
+---
+
+## 🎮 平台相容性 / Platform Compatibility
+
+| 平台 / Platform | 支援狀況 / Status |
+|---|---|
+| 🟢 **Steam (PC)** | ✅ 完整支援 / Full support |
+| 🔴 **Xbox 主機 (Series X/S, One)** | ❌ 不可能支援 / Impossible (closed system) |
+| 🟡 **Microsoft Store / Xbox PC App** | ⚠️ 暫不支援，徵求測試 / Not yet, contributors wanted |
+
+### 為什麼 Xbox 主機不行？
+主機是封閉系統，無法跑外部 `.exe`、無法存取遊戲檔案系統。沒有任何辦法。
+
+### 為什麼 MS Store / Xbox PC App 版暫不支援？
+
+主要有 3 個技術障礙，目前都還沒解：
+
+1. **遊戲路徑不同**：MS Store 版裝在 `C:\Program Files\WindowsApps\Microsoft.624F8B84B80_...\`，目前工具的自動偵測只認 Steam 註冊機碼。
+2. **WindowsApps 權限封鎖**：`WindowsApps` 資料夾預設連系統管理員都不能寫，需要先「取得擁有權」(Take Ownership) 才能改字幕 zip。改完後 Xbox App / Windows Update 可能會還原修改。
+3. **語言設定檔位置不明**：MS Store 版的 `UserPreferredLang` 不在 `%LOCALAPPDATA%\ForzaHorizon6\` 而是在沙盒 `%LOCALAPPDATA%\Packages\Microsoft.624F8B84B80_8wekyb3d8bbwe\LocalState\` 裡，路徑是推測但未證實。
+
+### Why not MS Store / Xbox PC App?
+
+Three blockers, none solved yet:
+
+1. **Different game install path** — MS Store version lives under `C:\Program Files\WindowsApps\Microsoft.624F8B84B80_...\`, which our Steam-registry-based path detection doesn't find.
+2. **WindowsApps is locked down** — even Administrator cannot write to `WindowsApps` by default; modifying the StringTables zips would require taking ownership, and Xbox App / Windows Update may revert changes afterwards.
+3. **Unknown UserPreferredLang location** — for the MS Store build, this file likely lives under the sandboxed `%LOCALAPPDATA%\Packages\Microsoft.624F8B84B80_8wekyb3d8bbwe\LocalState\`, but the exact path/format is not yet verified.
+
+### 🙏 徵求 MS Store 玩家協助 / Calling MS Store users
+
+如果你是 MS Store / Xbox PC App 版 FH6 玩家，**非常歡迎幫忙提供資訊**讓我們加上支援：
+請到 [Issue #1: MS Store / Xbox App version support](https://github.com/xpdai/FH6-Subtitle-Switcher/issues) 回報你的：
+
+- 遊戲安裝路徑（`WindowsApps\Microsoft.xxxxxx\` 完整路徑）
+- `StringTables` 資料夾是否存在、有哪些 zip 檔
+- `%LOCALAPPDATA%\Packages\` 底下有沒有名稱含「Forza」或「624F8B84B80」的資料夾
+- 該資料夾裡是否有 `UserPreferredLang` 或類似命名的檔案，內容是什麼
+
+If you're on MS Store / Xbox PC App, **please help us add support** by reporting the above information in [Issue #1](https://github.com/xpdai/FH6-Subtitle-Switcher/issues).
 
 ---
 
