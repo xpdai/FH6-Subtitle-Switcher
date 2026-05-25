@@ -9,6 +9,8 @@
 [![GUI](https://img.shields.io/badge/GUI-Tkinter-orange.svg)]()
 [![Game Version](https://img.shields.io/badge/Game-Steam%20Only-1b2838.svg)]()
 
+![GUI Screenshot](docs/screenshot_gui.png)
+
 > ⚠️ **平台支援 / Platform Support**
 > 目前**僅支援 Steam 版** FH6。Xbox 主機版、Microsoft Store / Xbox PC App 版本暫不支援，原因見下方[平台相容性](#-平台相容性--platform-compatibility)章節。
 > Currently **Steam version only**. Xbox console and Microsoft Store / Xbox PC App versions are not supported — see [Platform Compatibility](#-平台相容性--platform-compatibility) below for details.
