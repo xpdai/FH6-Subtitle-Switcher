@@ -63,6 +63,12 @@ FH6-Subtitle-Switcher/
 2. 雙擊執行，**不需要裝 Python**
 3. 工具會自動偵測 Steam 安裝的 FH6 位置
 
+> 🛡️ **第一次執行 SmartScreen 會擋下來，這正常**
+> 出現「Windows 已保護你的電腦」藍色視窗時：點「**更多資訊**」→「**仍要執行**」即可。
+> 這不是病毒，是因為這個 EXE 沒有花錢買 code signing 憑證、且下載人數還不夠多，Windows 預設會擋下未知來源的 EXE。詳見 FAQ。
+>
+> First-run SmartScreen warning is normal: click **More info** → **Run anyway**. The EXE is unsigned and lacks download reputation yet — Windows blocks unknown EXEs by default. See FAQ for details.
+
 ### 🔵 方法 B：從原始碼執行 / Run from source
 
 需要 **Python 3.10+**：
@@ -224,6 +230,18 @@ Closed system — no way to run external `.exe`, no filesystem access. **No work
 ---
 
 ## ❓ 常見問題 / FAQ
+
+**Q：Windows SmartScreen 跳「Windows 已保護你的電腦」怎麼辦？**
+A：點「**更多資訊**」→「**仍要執行**」即可。這是 Windows 對「未簽章且下載次數還不多的 EXE」的預設保護機制 —— 不是因為這支 EXE 有問題，而是因為它還沒有「信譽分數」。
+原因：本工具用 PyInstaller 打包，沒有花錢買 Authenticode 簽章憑證（個人專案 $100/年以上）；SmartScreen 對未簽章執行檔的政策是「先擋，等下載多了再放行」。
+如果你不放心，可以：
+- 看 [GitHub 原始碼](https://github.com/xpdai/FH6-Subtitle-Switcher)（純 Python、~600 行、自己跑也可以）
+- 自己用 `build.bat` 從原始碼編譯一份
+- 把 EXE 上傳到 [VirusTotal](https://www.virustotal.com/) 掃一下
+
+**Q：殺毒軟體把 EXE 當病毒刪了？**
+A：少數殺毒軟體會把 PyInstaller 打包的 EXE 誤判為 PUA（Trojan:Win32/Wacatac 等）。
+請到該殺毒軟體的隔離區把 EXE 還原並加入白名單，或從原始碼自己 build。
 
 **Q：會被 EAC / 反作弊系統封號嗎？**
 A：本工具完全不對遊戲程序做記憶體讀寫、不修改執行檔，只做「複製語言檔」和「寫一個 2-byte 文字檔」。技術上不會觸發任何反作弊偵測。但所有非官方修改本質上都自負風險。

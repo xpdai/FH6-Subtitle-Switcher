@@ -28,7 +28,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "FH6 字幕語音切換工具"
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 WRAPPER_BAT_NAME = "fh6_prelaunch_wrapper.bat"
 PREFERRED_LANG_FILENAME = "UserPreferredLang"
 

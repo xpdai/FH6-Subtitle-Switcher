@@ -26,6 +26,7 @@ pyinstaller ^
     --name "FH6_Subtitle_Switcher" ^
     --icon "icon.ico" ^
     --add-data "icon.ico;." ^
+    --version-file "version_info.txt" ^
     fh6_switcher.py
 
 if errorlevel 1 (
