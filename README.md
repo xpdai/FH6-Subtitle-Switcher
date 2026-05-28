@@ -255,8 +255,7 @@ A：這是預期行為。請使用「**Steam 啟動補套**」功能，設定一
 **Q：英文語音為什麼會動兩個檔（EN + GB）？**
 A：FH6 有 US English (`EN.zip`) 和 UK English (`GB.zip`) 兩個英文語音版本。工具會兩個都覆蓋，這樣不論你在遊戲內選哪一個英文選項都能正常顯示中文字幕。
 
-**Q：可以裝在 MS Store / Xbox PC App 版本嗎？**
-A：本工具的自動偵測只認 Steam 版。MS Store 版的 `StringTables` 路徑不同且可能受到 Windows 沙盒寫入限制。理論上可以手動指定路徑套用，但未經測試。
+
 
 ---
 
