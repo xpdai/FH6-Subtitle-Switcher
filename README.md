@@ -7,13 +7,13 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![GUI](https://img.shields.io/badge/GUI-Tkinter-orange.svg)]()
-[![Game Version](https://img.shields.io/badge/Game-Steam%20Only-1b2838.svg)]()
+[![Game Version](https://img.shields.io/badge/Game-Steam%20%7C%20MS%20Store-1b2838.svg)]()
 
 ![GUI Screenshot](docs/screenshot_gui.png)
 
-> ⚠️ **平台支援 / Platform Support**
-> 目前**僅支援 Steam 版** FH6。Xbox 主機版、Microsoft Store / Xbox PC App 版本暫不支援，原因見下方[平台相容性](#-平台相容性--platform-compatibility)章節。
-> Currently **Steam version only**. Xbox console and Microsoft Store / Xbox PC App versions are not supported — see [Platform Compatibility](#-平台相容性--platform-compatibility) below for details.
+> ✅ **平台支援 / Platform Support**
+> 已驗證支援 **Steam 版**和 **Microsoft Store / Xbox PC App 版**（MS Store 需手動指定路徑，且使用前要先安裝想用的語言包；詳見[平台相容性](#-平台相容性--platform-compatibility)章節）。Xbox 主機版無法支援。
+> Verified for **Steam** and **Microsoft Store / Xbox PC App** (MS Store users need to point the path manually and pre-install desired language packs — see [Platform Compatibility](#-平台相容性--platform-compatibility) for details). Xbox console not supported.
 
 ---
 
@@ -180,39 +180,42 @@ FH6 把使用者選的語言存在純文字檔：
 | 平台 / Platform | 支援狀況 / Status |
 |---|---|
 | 🟢 **Steam (PC)** | ✅ 完整支援 / Full support |
+| 🟢 **Microsoft Store / Xbox PC App** | ✅ 已驗證支援（需手動指定路徑＋預先安裝語言包）/ Verified (manual path + pre-install language packs) |
 | 🔴 **Xbox 主機 (Series X/S, One)** | ❌ 不可能支援 / Impossible (closed system) |
-| 🟡 **Microsoft Store / Xbox PC App** | ⚠️ 暫不支援，徵求測試 / Not yet, contributors wanted |
 
-### 為什麼 Xbox 主機不行？
-主機是封閉系統，無法跑外部 `.exe`、無法存取遊戲檔案系統。沒有任何辦法。
+### Microsoft Store / Xbox PC App 使用說明
 
-### 為什麼 MS Store / Xbox PC App 版暫不支援？
+MS Store 版玩家實測可用，但有幾點與 Steam 版不同，請依下面流程操作（感謝社群回報）：
 
-主要有 3 個技術障礙，目前都還沒解：
+1. **先在 Xbox App 安裝你想要的語言包**
+   例如想要「中字 + 日語音」，要先在 Xbox App 把 FH6 的繁體中文和日文語言包都安裝過一次，這樣 `StringTables` 資料夾裡才會有 `CHT.zip` 和 `JP.zip` 可換。
+2. **如果之前手動改過**，先把 `StringTables` 清乾淨（刪除你修改過的檔案），然後到 Xbox App **驗證遊戲檔案完整性**重新下載到乾淨狀態
+3. **打開本工具**，按「手動選擇…」指到（路徑大小寫不重要）：
+   ```
+   <磁碟>:\XboxGames\Forza Horizon 6\Content\media\stripped\stringtables
+   ```
+   （v1.2.0 之後工具會自動掃磁碟，多數情況不用手動）
+4. 之後使用方式跟 Steam 版完全一樣
 
-1. **遊戲路徑不同**：MS Store 版裝在 `C:\Program Files\WindowsApps\Microsoft.624F8B84B80_...\`，目前工具的自動偵測只認 Steam 註冊機碼。
-2. **WindowsApps 權限封鎖**：`WindowsApps` 資料夾預設連系統管理員都不能寫，需要先「取得擁有權」(Take Ownership) 才能改字幕 zip。改完後 Xbox App / Windows Update 可能會還原修改。
-3. **語言設定檔位置不明**：MS Store 版的 `UserPreferredLang` 不在 `%LOCALAPPDATA%\ForzaHorizon6\` 而是在沙盒 `%LOCALAPPDATA%\Packages\Microsoft.624F8B84B80_8wekyb3d8bbwe\LocalState\` 裡，路徑是推測但未證實。
+### Microsoft Store / Xbox PC App user guide
 
-### Why not MS Store / Xbox PC App?
+The MS Store build works fine; community testing confirmed it. There are a few quirks vs Steam:
 
-Three blockers, none solved yet:
+1. **Pre-install each language pack via Xbox App first.**
+   For e.g. "Chinese subs + Japanese voice", the FH6 Traditional Chinese and Japanese language packs must already be installed in the Xbox App — that's how the corresponding `CHT.zip` and `JP.zip` files appear in `StringTables`.
+2. **If you've previously hand-modified files**, clean out `StringTables` (delete your modified files) and use the Xbox App to **Verify game files** to restore a clean baseline.
+3. **Open the tool** and click "Browse..." to point to (case-insensitive):
+   ```
+   <drive>:\XboxGames\Forza Horizon 6\Content\media\stripped\stringtables
+   ```
+   (Since v1.2.0 the tool scans all drives automatically — manual selection is usually unnecessary.)
+4. After that, usage is identical to the Steam version.
 
-1. **Different game install path** — MS Store version lives under `C:\Program Files\WindowsApps\Microsoft.624F8B84B80_...\`, which our Steam-registry-based path detection doesn't find.
-2. **WindowsApps is locked down** — even Administrator cannot write to `WindowsApps` by default; modifying the StringTables zips would require taking ownership, and Xbox App / Windows Update may revert changes afterwards.
-3. **Unknown UserPreferredLang location** — for the MS Store build, this file likely lives under the sandboxed `%LOCALAPPDATA%\Packages\Microsoft.624F8B84B80_8wekyb3d8bbwe\LocalState\`, but the exact path/format is not yet verified.
+### 為什麼 Xbox 主機完全不行？
+主機是封閉系統，無法跑外部 `.exe`、無法存取遊戲檔案系統。**沒有任何辦法**。
 
-### 🙏 徵求 MS Store 玩家協助 / Calling MS Store users
-
-如果你是 MS Store / Xbox PC App 版 FH6 玩家，**非常歡迎幫忙提供資訊**讓我們加上支援：
-請到 [Issue #1: MS Store / Xbox App version support](https://github.com/xpdai/FH6-Subtitle-Switcher/issues) 回報你的：
-
-- 遊戲安裝路徑（`WindowsApps\Microsoft.xxxxxx\` 完整路徑）
-- `StringTables` 資料夾是否存在、有哪些 zip 檔
-- `%LOCALAPPDATA%\Packages\` 底下有沒有名稱含「Forza」或「624F8B84B80」的資料夾
-- 該資料夾裡是否有 `UserPreferredLang` 或類似命名的檔案，內容是什麼
-
-If you're on MS Store / Xbox PC App, **please help us add support** by reporting the above information in [Issue #1](https://github.com/xpdai/FH6-Subtitle-Switcher/issues).
+### Why is Xbox console impossible?
+Closed system — no way to run external `.exe`, no filesystem access. **No workaround exists.**
 
 ---
 

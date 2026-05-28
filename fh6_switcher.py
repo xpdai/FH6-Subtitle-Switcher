@@ -28,7 +28,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "FH6 字幕語音切換工具"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 WRAPPER_BAT_NAME = "fh6_prelaunch_wrapper.bat"
 PREFERRED_LANG_FILENAME = "UserPreferredLang"
 
@@ -133,8 +133,42 @@ def _parse_libraryfolders(vdf_path: Path) -> list[Path]:
     return libs
 
 
+def _available_drives() -> list[Path]:
+    """Enumerate fixed/removable drives that currently have a root directory."""
+    drives: list[Path] = []
+    for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+        p = Path(f"{letter}:\\")
+        if p.exists():
+            drives.append(p)
+    return drives
+
+
+def find_xbox_stringtables() -> Path | None:
+    """Find FH6 StringTables for the MS Store / Xbox PC App install.
+
+    Xbox PC App stores games at `<drive>:\\XboxGames\\<game name>\\Content\\`.
+    The folder name may vary slightly between editions, so glob it.
+    """
+    for drive in _available_drives():
+        xbox_root = drive / "XboxGames"
+        if not xbox_root.exists():
+            continue
+        # match "Forza Horizon 6", "Forza Horizon 6 Standard Edition", etc.
+        for sub in xbox_root.glob("Forza Horizon 6*"):
+            # Xbox PC App paths are case-insensitive on Windows but report
+            # in lowercase from the reporter — accept either.
+            for candidate in [
+                sub / "Content" / "media" / "Stripped" / "StringTables",
+                sub / "Content" / "media" / "stripped" / "stringtables",
+            ]:
+                if candidate.exists():
+                    return candidate
+    return None
+
+
 def find_fh6_stringtables() -> Path | None:
-    """Look for FH6 StringTables across all Steam libraries."""
+    """Look for FH6 StringTables across all Steam libraries and Xbox installs."""
+    # Try Steam first
     steam = _steam_install_path()
     libs: list[Path] = []
     if steam:
@@ -142,7 +176,6 @@ def find_fh6_stringtables() -> Path | None:
         vdf = steam / "steamapps" / "libraryfolders.vdf"
         if vdf.exists():
             libs.extend(_parse_libraryfolders(vdf))
-    # de-dup
     seen, ordered = set(), []
     for p in libs:
         rp = p.resolve()
@@ -153,33 +186,90 @@ def find_fh6_stringtables() -> Path | None:
         candidate = lib / "steamapps" / "common" / "ForzaHorizon6" / "media" / "Stripped" / "StringTables"
         if candidate.exists():
             return candidate
-    return None
+    # Fall back to Xbox / MS Store
+    return find_xbox_stringtables()
+
+
+def _localappdata() -> Path:
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return Path(base)
 
 
 def forza_appdata_dir() -> Path:
-    """%LOCALAPPDATA%\\ForzaHorizon6 — where Forza stores user prefs."""
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
-    return Path(base) / "ForzaHorizon6"
+    """%LOCALAPPDATA%\\ForzaHorizon6 — the Steam-build preference location."""
+    return _localappdata() / "ForzaHorizon6"
+
+
+def forza_appdata_candidates() -> list[Path]:
+    """All plausible locations of Forza's UserPreferredLang.
+
+    Steam build:  %LOCALAPPDATA%\\ForzaHorizon6\\
+    MS Store / Xbox PC App:  %LOCALAPPDATA%\\Packages\\<UWP-package>\\LocalState\\
+    """
+    candidates: list[Path] = [forza_appdata_dir()]
+    packages = _localappdata() / "Packages"
+    if packages.exists():
+        for sub in packages.iterdir():
+            if not sub.is_dir():
+                continue
+            name = sub.name
+            # FH6 UWP package family. The publisher hash 8wekyb3d8bbwe is Microsoft's.
+            if ("Forza" in name) or ("624F8B84B80" in name) or ("FH6" in name):
+                local_state = sub / "LocalState"
+                if local_state.exists():
+                    candidates.append(local_state)
+                else:
+                    candidates.append(sub)
+    return candidates
 
 
 def read_preferred_lang() -> str | None:
-    f = forza_appdata_dir() / PREFERRED_LANG_FILENAME
-    if not f.exists():
-        return None
-    try:
-        return f.read_text(encoding="ascii", errors="strict").strip() or None
-    except Exception:
-        return None
+    """Return the first non-empty UserPreferredLang value found."""
+    for d in forza_appdata_candidates():
+        f = d / PREFERRED_LANG_FILENAME
+        if f.exists():
+            try:
+                v = f.read_text(encoding="ascii", errors="strict").strip()
+                if v:
+                    return v
+            except Exception:
+                continue
+    return None
 
 
-def write_preferred_lang(code: str) -> Path:
-    """Write Forza's preferred-language file so the game auto-loads that locale on launch."""
-    d = forza_appdata_dir()
-    d.mkdir(parents=True, exist_ok=True)
-    f = d / PREFERRED_LANG_FILENAME
-    # Forza stores it as raw ASCII bytes (no BOM, no newline). 2-3 chars: JP / EN / CHT etc.
-    f.write_bytes(code.encode("ascii"))
-    return f
+def write_preferred_lang(code: str) -> list[Path]:
+    """Write Forza's preferred-language to every candidate location.
+
+    Always writes to %LOCALAPPDATA%\\ForzaHorizon6\\ (Steam location).
+    Also writes to any MS Store / UWP sandbox locations found under
+    %LOCALAPPDATA%\\Packages\\. Returns the list of paths actually written.
+    """
+    payload = code.encode("ascii")
+    written: list[Path] = []
+    # Steam location — create folder if missing (cheap and idempotent)
+    steam_dir = forza_appdata_dir()
+    steam_dir.mkdir(parents=True, exist_ok=True)
+    target = steam_dir / PREFERRED_LANG_FILENAME
+    target.write_bytes(payload)
+    written.append(target)
+    # MS Store sandbox locations — only if folder already exists
+    packages = _localappdata() / "Packages"
+    if packages.exists():
+        for sub in packages.iterdir():
+            if not sub.is_dir():
+                continue
+            name = sub.name
+            if ("Forza" in name) or ("624F8B84B80" in name) or ("FH6" in name):
+                local_state = sub / "LocalState"
+                if not local_state.exists():
+                    continue
+                f = local_state / PREFERRED_LANG_FILENAME
+                try:
+                    f.write_bytes(payload)
+                    written.append(f)
+                except Exception:
+                    pass
+    return written
 
 
 def validate_stringtables_dir(p: Path) -> tuple[bool, str]:
@@ -320,7 +410,22 @@ def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
             f'        copy /Y "{sub_code}.zip" "{other}" >nul\n'
             f"    )\n"
         )
-    forza_dir = forza_appdata_dir()
+    # Bake in all detected UserPreferredLang candidate dirs so the wrapper
+    # works for both Steam and MS Store installs.
+    pref_lines = []
+    for d in forza_appdata_candidates():
+        pref_lines.append(
+            f'if exist "{d}" <nul set /p="{voice_code}" > "{d}\\{PREFERRED_LANG_FILENAME}"\r\n'
+        )
+    # Always include Steam location even if it does not yet exist
+    steam_dir = forza_appdata_dir()
+    if not any(str(steam_dir) in line for line in pref_lines):
+        pref_lines.insert(0,
+            f'if not exist "{steam_dir}" mkdir "{steam_dir}" >nul 2>nul\r\n'
+            f'<nul set /p="{voice_code}" > "{steam_dir}\\{PREFERRED_LANG_FILENAME}"\r\n'
+        )
+    pref_block = "".join(pref_lines)
+
     content = (
         "@echo off\r\n"
         "chcp 65001 >nul\r\n"
@@ -329,8 +434,6 @@ def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
         f'set "FH6DIR={st_dir}"\r\n'
         f'set "SUB={sub_code}.zip"\r\n'
         f'set "VOICE={voice_code}.zip"\r\n'
-        f'set "FORZADIR={forza_dir}"\r\n'
-        f'set "LANGCODE={voice_code}"\r\n'
         "\r\n"
         'if exist "%FH6DIR%\\%SUB%" if exist "%FH6DIR%\\%VOICE%" (\r\n'
         '    pushd "%FH6DIR%" >nul\r\n'
@@ -341,9 +444,8 @@ def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
         '    popd >nul\r\n'
         ")\r\n"
         "\r\n"
-        "REM Also overwrite Forza\'s saved UI language so the in-game setting is auto-set\r\n"
-        'if not exist "%FORZADIR%" mkdir "%FORZADIR%" >nul 2>nul\r\n'
-        '<nul set /p="%LANGCODE%" > "%FORZADIR%\\UserPreferredLang"\r\n'
+        "REM Also overwrite Forza's saved UI language so the in-game setting is auto-set\r\n"
+        f"{pref_block}"
         "\r\n"
         "%*\r\n"
     )
@@ -552,8 +654,11 @@ class App(tk.Tk):
             # Also overwrite Forza's saved language preference so the user doesn't
             # have to touch the in-game language menu next time they launch.
             try:
-                f = write_preferred_lang(voice)
-                self._log(f"[設定] UserPreferredLang ← {voice}   ({f})")
+                paths = write_preferred_lang(voice)
+                for p in paths:
+                    self._log(f"[設定] UserPreferredLang ← {voice}   ({p})")
+                if len(paths) > 1:
+                    self._log(f"（同時寫入 {len(paths)} 個位置 — Steam + MS Store 沙盒）")
                 self._log("進遊戲不用再調語言，會直接是這個組合。")
             except Exception as e:
                 self._log(f"[警告] 無法寫入 UserPreferredLang：{e}（你還是可以手動進遊戲設定語言）")
