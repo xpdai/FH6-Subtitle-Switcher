@@ -28,7 +28,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "FH6 字幕語音切換工具"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 WRAPPER_BAT_NAME = "fh6_prelaunch_wrapper.bat"
 PREFERRED_LANG_FILENAME = "UserPreferredLang"
 
@@ -270,6 +270,16 @@ def write_preferred_lang(code: str) -> list[Path]:
                 except Exception:
                     pass
     return written
+
+
+def is_xbox_install(p: Path) -> bool:
+    """Detect MS Store / Xbox PC App install by path marker."""
+    return any(part.lower() == "xboxgames" for part in p.parts)
+
+
+def is_steam_install(p: Path) -> bool:
+    """Detect Steam install by path marker."""
+    return any(part.lower() == "steamapps" for part in p.parts)
 
 
 def validate_stringtables_dir(p: Path) -> tuple[bool, str]:
@@ -534,14 +544,17 @@ class App(tk.Tk):
         ttk.Button(action, text="重新掃描狀態", command=self._refresh_status, width=14).pack(side="right")
 
         # ---- Steam wrapper frame
-        wrap = ttk.LabelFrame(self, text="Steam 啟動前自動補套（強烈建議）")
-        wrap.pack(fill="x", **pad)
-        ttk.Label(wrap, text="勾選後產生包裝腳本並把 Steam 啟動選項複製到剪貼簿。\n"
-                              "之後每次按 Steam「遊玩」會先自動套用你選的組合再啟動 FH6。",
-                  foreground="#444", justify="left").pack(anchor="w", padx=8, pady=(6, 4))
-        wbtn = ttk.Frame(wrap)
+        self.wrap_frame = ttk.LabelFrame(self, text="Steam 啟動前自動補套（僅限 Steam 版）")
+        self.wrap_frame.pack(fill="x", **pad)
+        self.wrap_desc_var = tk.StringVar(value=
+            "勾選後產生包裝腳本並把 Steam 啟動選項複製到剪貼簿。\n"
+            "之後每次按 Steam「遊玩」會先自動套用你選的組合再啟動 FH6。")
+        ttk.Label(self.wrap_frame, textvariable=self.wrap_desc_var,
+                  foreground="#444", justify="left", wraplength=620).pack(anchor="w", padx=8, pady=(6, 4))
+        wbtn = ttk.Frame(self.wrap_frame)
         wbtn.pack(fill="x", padx=8, pady=(0, 8))
-        ttk.Button(wbtn, text="設定 Steam 啟動補套", command=self._do_setup_wrapper, width=22).pack(side="left")
+        self.wrap_button = ttk.Button(wbtn, text="設定 Steam 啟動補套", command=self._do_setup_wrapper, width=22)
+        self.wrap_button.pack(side="left")
         ttk.Button(wbtn, text="開啟設定資料夾", command=self._open_config_dir, width=18).pack(side="left", padx=(8, 0))
 
         # ---- Log
@@ -601,6 +614,29 @@ class App(tk.Tk):
         self._log(f"已設定路徑：{p}")
         self._refresh_status()
 
+    def _update_wrapper_ui(self):
+        """Show wrapper feature only when path looks like Steam install."""
+        if self.st_dir is None:
+            self.wrap_frame.configure(text="Steam 啟動前自動補套（僅限 Steam 版）")
+            self.wrap_desc_var.set(
+                "勾選後產生包裝腳本並把 Steam 啟動選項複製到剪貼簿。\n"
+                "之後每次按 Steam「遊玩」會先自動套用你選的組合再啟動 FH6。")
+            self.wrap_button.configure(state="normal")
+            return
+        if is_xbox_install(self.st_dir):
+            self.wrap_frame.configure(text="Steam 啟動前自動補套（不適用於 MS Store 版）")
+            self.wrap_desc_var.set(
+                "你目前用的是 MS Store / Xbox PC App 版 FH6，Xbox App 沒有 Steam\n"
+                "那種「啟動選項」可以掛 wrapper，此功能不適用。\n"
+                "Forza 更新後，重新打開本工具按一次「套用」即可。")
+            self.wrap_button.configure(state="disabled")
+        else:
+            self.wrap_frame.configure(text="Steam 啟動前自動補套（強烈建議）")
+            self.wrap_desc_var.set(
+                "勾選後產生包裝腳本並把 Steam 啟動選項複製到剪貼簿。\n"
+                "之後每次按 Steam「遊玩」會先自動套用你選的組合再啟動 FH6。")
+            self.wrap_button.configure(state="normal")
+
     def _refresh_status(self):
         if self.st_dir is None:
             self.status_var.set("尚未設定路徑")
@@ -634,6 +670,7 @@ class App(tk.Tk):
         else:
             lines.append("所有語言檔都是原始狀態。")
         self.status_var.set("\n".join(lines))
+        self._update_wrapper_ui()
 
     def _selected_codes(self) -> tuple[str | None, str | None]:
         sub = LABEL_TO_CODE.get(self.sub_var.get())
@@ -687,6 +724,16 @@ class App(tk.Tk):
     def _do_setup_wrapper(self):
         if self.st_dir is None:
             messagebox.showwarning(APP_NAME, "請先設定遊戲路徑。")
+            return
+        if is_xbox_install(self.st_dir):
+            messagebox.showinfo(
+                APP_NAME,
+                "此功能僅適用於 Steam 版。\n\n"
+                "MS Store / Xbox PC App 透過 Xbox App 啟動 UWP 應用，"
+                "沒有 Steam 那種「啟動選項」欄位可以掛 wrapper，"
+                "所以無法做到「按遊玩自動套用」這件事。\n\n"
+                "你目前的做法：Forza 每次更新後，重新打開本工具按一次「套用」即可。"
+            )
             return
         sub, voice = self._selected_codes()
         if not sub or not voice:
