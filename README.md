@@ -229,6 +229,42 @@ Closed system — no way to run external `.exe`, no filesystem access. **No work
 
 ---
 
+## ⚠️ 已知限制 / Known Limitations
+
+### 伺服器拉的動態文字會跟著語音語言走 / Server-fetched text follows voice language
+
+FH6 只有**一個**語言設定 (`UserPreferredLang`) 同時控制三件事：
+
+1. 哪個 `StringTables\XX.zip` 載入（UI／字幕）✅ 工具可以換
+2. 哪個語音檔載入 ✅ 我們刻意不動（這是你想聽的語音）
+3. 跟 Forza 伺服器要動態內容時的 `Accept-Language` ❌ 我們改不了
+
+第 3 點的結果就是：**信箱、新聞、活動文字、藍圖標題等從伺服器抓回來的內容會留在語音語言**，不是字幕語言。例如你選「英字 + 德音」，遊戲內信箱還是德文。
+
+這些動態內容存在 `%LOCALAPPDATA%\ForzaHorizon6\CmsCache\` 是加密的二進位 blob，沒辦法解碼後改回字幕語言。
+
+要做到也只剩下：A) 逆向解 CmsCache 加密（每次更新都會壞、又貴又脆）B) MITM HTTPS 改 `Accept-Language`（保證觸發 EAC）C) 改遊戲 exe（百分百觸發 EAC）— 沒一個值得做。
+
+如果 Playground Games 哪天加上音／文分離選項就解了。在那之前這就是固定限制。詳見 [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2)。
+
+### Server-fetched text follows the voice language
+
+FH6 only has **one** language switch (`UserPreferredLang`) that drives three things at once:
+
+1. Which `StringTables\XX.zip` to load (UI / subtitles) — ✅ swapped by the tool
+2. Which voice audio bank to load — ✅ deliberately untouched (that's the voice you wanted)
+3. The `Accept-Language` sent to Forza's CMS backend — ❌ we can't influence this
+
+That third point means **in-game mail, news, event text, blueprint titles, and other server-pushed content stay in the voice language**, not the subtitle language. E.g. "EN subs + DE voice" still shows German mail.
+
+This content is cached locally under `%LOCALAPPDATA%\ForzaHorizon6\CmsCache\` as encrypted binary blobs, so there is no easy way to retranslate it offline.
+
+The only paths to a real fix are: (a) reverse-engineering and re-encrypting the CMS cache (fragile across patches), (b) MITMing the game's HTTPS traffic (guaranteed to trip EAC), or (c) patching the executable (also EAC-tripping). None are reasonable for a file-copy hobby tool.
+
+Unless / until Playground Games ships separate audio + text language settings, this is a fixed limitation. Details in [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2).
+
+---
+
 ## ❓ 常見問題 / FAQ
 
 **Q：Windows SmartScreen 跳「Windows 已保護你的電腦」怎麼辦？**
