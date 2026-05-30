@@ -1,9 +1,9 @@
 # PyInstaller version-info resource for FH6 Subtitle Switcher
-# Generated for v1.2.2 — bump filevers / prodvers below for new releases.
+# Generated for v1.3.0 — bump filevers / prodvers below for new releases.
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 2, 2, 0),
-    prodvers=(1, 2, 2, 0),
+    filevers=(1, 3, 0, 0),
+    prodvers=(1, 3, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -19,12 +19,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName', u'xpdai'),
             StringStruct(u'FileDescription', u'FH6 Subtitle / Voice Language Switcher'),
-            StringStruct(u'FileVersion', u'1.2.2.0'),
+            StringStruct(u'FileVersion', u'1.3.0.0'),
             StringStruct(u'InternalName', u'FH6_Subtitle_Switcher'),
             StringStruct(u'LegalCopyright', u'MIT License - https://github.com/xpdai/FH6-Subtitle-Switcher'),
             StringStruct(u'OriginalFilename', u'FH6_Subtitle_Switcher.exe'),
             StringStruct(u'ProductName', u'FH6 Subtitle Switcher'),
-            StringStruct(u'ProductVersion', u'1.2.2.0'),
+            StringStruct(u'ProductVersion', u'1.3.0.0'),
           ]
         )
       ]

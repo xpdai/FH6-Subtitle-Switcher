@@ -8,8 +8,12 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![GUI](https://img.shields.io/badge/GUI-Tkinter-orange.svg)]()
 [![Game Version](https://img.shields.io/badge/Game-Steam%20%7C%20MS%20Store-1b2838.svg)]()
+[![UI Language](https://img.shields.io/badge/UI-Chinese%20%7C%20English-success.svg)]()
 
-![GUI Screenshot](docs/screenshot_gui.png)
+<p align="center">
+  <img src="docs/screenshot_gui_zh.png" alt="Chinese GUI" width="49%"/>
+  <img src="docs/screenshot_gui_en.png" alt="English GUI" width="49%"/>
+</p>
 
 > ✅ **平台支援 / Platform Support**
 > 已驗證支援 **Steam 版**和 **Microsoft Store / Xbox PC App 版**（MS Store 需手動指定路徑，且使用前要先安裝想用的語言包；詳見[平台相容性](#-平台相容性--platform-compatibility)章節）。Xbox 主機版無法支援。
@@ -22,7 +26,8 @@
 ### 🇹🇼 中文說明
 
 1. **24 × 24 語言任意組合**：把 FH6 的 24 種介面／字幕語言和 24 種語音語言完全解耦，可做出例如「中文字幕 + 日文語音」「中文字幕 + 英文語音」這類官方沒給的搭配。
-2. **進遊戲完全不用調**：套用同時把 Forza 的 `UserPreferredLang` 設定檔改成你選的語音代碼，下次直接開遊戲就是你要的組合，**完全不用進設定選語言**。
+2. **工具本身雙語介面**：選單列「語言 / Language」可即時切換繁體中文 / English，啟動時依系統語言自動選擇，選擇會被記住。
+3. **進遊戲完全不用調**：套用同時把 Forza 的 `UserPreferredLang` 設定檔改成你選的語音代碼，下次直接開遊戲就是你要的組合，**完全不用進設定選語言**。
 3. **自動偵測 Steam 路徑**：讀 Steam 登錄檔與 `libraryfolders.vdf`，跨硬碟也能自動找到 FH6 的 `StringTables` 資料夾，找不到才會請使用者手動指定。
 4. **SHA-256 狀態識別**：用內容雜湊比對告訴你「目前 JP.zip 內容其實是 CHT」、哪些檔已備份、哪些還是原版，狀態一目了然不會搞混。
 5. **自動備份 / 一鍵還原**：第一次套用時把原檔備份到 `StringTables/_backup/`，按「還原全部」即可整批回原樣，Steam 完整性驗證也是後路。
@@ -32,7 +37,8 @@
 ### 🇬🇧 English Description
 
 1. **24 × 24 Language Combinations**: Fully decouples FH6's 24 UI/subtitle languages from its 24 voice languages, enabling unofficial combos like "Chinese subs + Japanese voice" or "Chinese subs + English voice".
-2. **Zero In-Game Adjustment Required**: When applying a combo, the tool also rewrites Forza's `UserPreferredLang` preference file so the chosen language is auto-selected on next launch — **no in-game language menu fiddling needed**.
+2. **Bilingual GUI (Traditional Chinese / English)**: Pick between the two from the *Language* menu at any time — switches live, with no restart. Defaults to your OS locale on first launch, and the choice is remembered.
+3. **Zero In-Game Adjustment Required**: When applying a combo, the tool also rewrites Forza's `UserPreferredLang` preference file so the chosen language is auto-selected on next launch — **no in-game language menu fiddling needed**.
 3. **Automatic Steam Path Detection**: Reads the Steam registry key and `libraryfolders.vdf` to locate the FH6 `StringTables` folder across all library drives; falls back to a folder picker only when detection fails.
 4. **SHA-256 State Awareness**: Hash-compares every language zip against known originals and tells you exactly what each slot currently contains (e.g. "JP.zip currently holds CHT content"), so you always know the real state.
 5. **Auto Backup / One-Click Restore**: Original zips are copied to `StringTables/_backup/` on first apply; one button restores everything. Steam's Verify Integrity is always available as a final fallback.
