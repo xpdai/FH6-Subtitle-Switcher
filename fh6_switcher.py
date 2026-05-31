@@ -28,9 +28,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
 WRAPPER_BAT_NAME = "fh6_prelaunch_wrapper.bat"
 PREFERRED_LANG_FILENAME = "UserPreferredLang"
+
+# ---------------------------------------------------------------- intro videos
+# Two opening videos play before the game's title menu. Each has a standard-
+# resolution variant in media/UI/Videos/ and a high-res variant in
+# media/UI/Videos/hires/. Renaming the file (so the game can't open it) makes
+# the engine skip the video and proceed to the next state instantly.
+INTRO_VIDEO_GROUPS: dict[str, list[str]] = {
+    "studio_splash": ["T10_MS_Combined.bk2"],          # Microsoft + Turn 10 logo
+    "title_screen": ["pgc3556_start_screen_01.bk2"],   # "Press any button" title video
+}
+INTRO_VIDEO_SUBDIRS = ["", "hires"]  # check both std + hires copies
 
 
 # ---------------------------------------------------------------- translations
@@ -133,6 +144,28 @@ TR: dict[str, dict[str, str]] = {
         "log_error_generic": "[錯誤] {err}",
         # language change banner in log
         "log_lang_switched": "── 介面語言已切換 / UI language changed ──",
+        # intro skip section
+        "frame_intro": "跳過開頭動畫",
+        "intro_desc": "勾選想跳過的影片，按「套用」。再次按可即時切換。",
+        "chk_skip_studio": "跳過 Studio 片頭 (Microsoft / Turn 10 Logo)",
+        "chk_skip_title": "跳過標題畫面影片 (按任意鍵那段)",
+        "btn_intro_apply": "套用",
+        "btn_intro_restore_all": "全部還原",
+        "intro_status_normal": "原始狀態",
+        "intro_status_skipped": "已跳過",
+        "intro_status_mixed": "部分檔案異常",
+        "intro_status_absent": "找不到影片資料夾",
+        "intro_status_line": "Studio 片頭：{studio}   標題畫面：{title}",
+        "log_intro_renamed": "[跳過] {name} → {name}.bak",
+        "log_intro_restored": "[還原] {name}.bak → {name}",
+        "log_intro_already_skipped": "{name} 已是跳過狀態，不用動作。",
+        "log_intro_already_normal": "{name} 已是原始狀態，不用動作。",
+        "log_intro_removed_dup": "[整理] 移除遊戲更新後新解出的 {name}（保留 .bak）",
+        "log_intro_dropped_bak": "[整理] 刪除多餘的 {name}.bak（原檔已在）",
+        "log_intro_file_missing": "[略過] {name} 找不到（語言包未安裝或 Steam 驗證後重抓）",
+        "log_intro_videos_dir_missing": "[錯誤] 影片資料夾不存在：{path}",
+        "log_intro_skip_failed": "[失敗] 處理 {name} 失敗（檔案可能被其他程序鎖住）",
+        "log_intro_cant_restore": "[警告] 找不到 {name} 也找不到備份，無法還原（請用 Steam 驗證遊戲檔案）",
     },
     "en": {
         "app_name": "FH6 Subtitle Switcher",
@@ -223,6 +256,28 @@ TR: dict[str, dict[str, str]] = {
         "log_wrapper_copied": "(Copied to clipboard.)",
         "log_error_generic": "[Error] {err}",
         "log_lang_switched": "── UI language changed / 介面語言已切換 ──",
+        # intro skip section
+        "frame_intro": "Skip Opening Videos",
+        "intro_desc": "Tick the videos you want skipped, then click Apply. Re-toggle anytime.",
+        "chk_skip_studio": "Skip studio splash (Microsoft / Turn 10 logo)",
+        "chk_skip_title": "Skip title video (the \"press any button\" loop)",
+        "btn_intro_apply": "Apply",
+        "btn_intro_restore_all": "Restore All",
+        "intro_status_normal": "original",
+        "intro_status_skipped": "skipped",
+        "intro_status_mixed": "files inconsistent",
+        "intro_status_absent": "videos folder missing",
+        "intro_status_line": "Studio splash: {studio}   Title video: {title}",
+        "log_intro_renamed": "[Skipped] {name} → {name}.bak",
+        "log_intro_restored": "[Restored] {name}.bak → {name}",
+        "log_intro_already_skipped": "{name} is already skipped — no action needed.",
+        "log_intro_already_normal": "{name} is already at original state — no action needed.",
+        "log_intro_removed_dup": "[Cleanup] Removed re-downloaded {name} (keeping existing .bak)",
+        "log_intro_dropped_bak": "[Cleanup] Removed stale {name}.bak (original is in place)",
+        "log_intro_file_missing": "[Skipped] {name} not found (language pack not installed, or Steam verify re-pulled it)",
+        "log_intro_videos_dir_missing": "[Error] Videos folder doesn't exist: {path}",
+        "log_intro_skip_failed": "[Failed] Could not process {name} (file may be locked by another process)",
+        "log_intro_cant_restore": "[Warning] Neither {name} nor its .bak exists, can't restore (run Steam Verify Integrity)",
     },
 }
 
@@ -606,8 +661,118 @@ def restore_all(st_dir: Path) -> list[tuple[str, dict]]:
     return actions
 
 
+# ---------------------------------------------------------------- intro skip
+def videos_dir(st_dir: Path) -> Path:
+    """Derive media/UI/Videos folder from the StringTables path.
+
+    StringTables sits at <game>/media/Stripped/StringTables.
+    Intros sit at <game>/media/UI/Videos.
+    """
+    return st_dir.parents[1] / "UI" / "Videos"
+
+
+def intro_paths(videos: Path, group: str) -> list[Path]:
+    """Every file path (std + hires) for a video group, whether or not it exists."""
+    out: list[Path] = []
+    for name in INTRO_VIDEO_GROUPS.get(group, []):
+        for sub in INTRO_VIDEO_SUBDIRS:
+            out.append(videos / sub / name if sub else videos / name)
+    return out
+
+
+def intro_group_state(videos: Path, group: str) -> str:
+    """Return one of: 'skipped' / 'normal' / 'mixed' / 'absent'.
+
+    skipped — every variant has been renamed to .bak (original missing)
+    normal  — every variant is at its original location, no .bak
+    mixed   — some renamed, some not, or both copies present
+    absent  — the videos folder / files don't exist at all
+    """
+    if not videos.exists():
+        return "absent"
+    states = []
+    for p in intro_paths(videos, group):
+        bak = p.with_suffix(p.suffix + ".bak")
+        has_orig = p.exists()
+        has_bak = bak.exists()
+        if not has_orig and not has_bak:
+            states.append("absent")
+        elif has_orig and not has_bak:
+            states.append("normal")
+        elif has_bak and not has_orig:
+            states.append("skipped")
+        else:
+            states.append("mixed")
+    unique = set(states)
+    if unique == {"skipped"}:
+        return "skipped"
+    if unique == {"normal"}:
+        return "normal"
+    if unique == {"absent"}:
+        return "absent"
+    return "mixed"
+
+
+def skip_intro_group(videos: Path, group: str) -> list[tuple[str, dict]]:
+    """Rename each file in a group so the engine can't open it.
+
+    Idempotent: re-applies cleanly if the game update brought back the original.
+    """
+    actions: list[tuple[str, dict]] = []
+    if not videos.exists():
+        return [("log_intro_videos_dir_missing", {"path": str(videos)})]
+    for p in intro_paths(videos, group):
+        bak = p.with_suffix(p.suffix + ".bak")
+        if p.exists() and not bak.exists():
+            p.rename(bak)
+            actions.append(("log_intro_renamed", {"name": p.name}))
+        elif p.exists() and bak.exists():
+            # Game update restored the original; we already have a backup.
+            try:
+                p.unlink()
+                actions.append(("log_intro_removed_dup", {"name": p.name}))
+            except Exception:
+                actions.append(("log_intro_skip_failed", {"name": p.name}))
+        elif not p.exists() and bak.exists():
+            actions.append(("log_intro_already_skipped", {"name": p.name}))
+        else:
+            actions.append(("log_intro_file_missing", {"name": p.name}))
+    return actions
+
+
+def restore_intro_group(videos: Path, group: str) -> list[tuple[str, dict]]:
+    """Inverse of skip_intro_group — bring the originals back."""
+    actions: list[tuple[str, dict]] = []
+    if not videos.exists():
+        return [("log_intro_videos_dir_missing", {"path": str(videos)})]
+    for p in intro_paths(videos, group):
+        bak = p.with_suffix(p.suffix + ".bak")
+        if bak.exists() and not p.exists():
+            bak.rename(p)
+            actions.append(("log_intro_restored", {"name": p.name}))
+        elif bak.exists() and p.exists():
+            try:
+                bak.unlink()
+                actions.append(("log_intro_dropped_bak", {"name": p.name}))
+            except Exception:
+                pass
+        elif p.exists():
+            actions.append(("log_intro_already_normal", {"name": p.name}))
+        else:
+            actions.append(("log_intro_cant_restore", {"name": p.name}))
+    return actions
+
+
+def restore_all_intros(videos: Path) -> list[tuple[str, dict]]:
+    actions: list[tuple[str, dict]] = []
+    for group in INTRO_VIDEO_GROUPS:
+        actions.extend(restore_intro_group(videos, group))
+    return actions
+
+
 # ---------------------------------------------------------------- steam wrapper
-def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
+def write_wrapper(st_dir: Path, sub_code: str, voice_code: str,
+                  skip_studio: bool = False, skip_title: bool = False) -> Path:
     """Create a wrapper .bat in %APPDATA% that re-applies the swap before launch."""
     wrapper_dir = _config_dir()
     wrapper = wrapper_dir / WRAPPER_BAT_NAME
@@ -636,6 +801,32 @@ def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
         )
     pref_block = "".join(pref_lines)
 
+    # Bake intro-skip commands so the wrapper also re-skips intros after FH updates.
+    intro_block = ""
+    if skip_studio or skip_title:
+        vdir = videos_dir(st_dir)
+        groups_to_skip = []
+        if skip_studio:
+            groups_to_skip.append("studio_splash")
+        if skip_title:
+            groups_to_skip.append("title_screen")
+        intro_lines = ["REM Re-skip opening videos\r\n"]
+        for group in groups_to_skip:
+            for name in INTRO_VIDEO_GROUPS[group]:
+                for sub in INTRO_VIDEO_SUBDIRS:
+                    src = (vdir / sub / name) if sub else (vdir / name)
+                    bak = src.with_suffix(src.suffix + ".bak")
+                    intro_lines.append(
+                        f'if exist "{src}" (\r\n'
+                        f'    if exist "{bak}" (\r\n'
+                        f'        del "{src}" >nul 2>nul\r\n'
+                        f'    ) else (\r\n'
+                        f'        ren "{src}" "{src.name}.bak" >nul 2>nul\r\n'
+                        f'    )\r\n'
+                        f")\r\n"
+                    )
+        intro_block = "".join(intro_lines)
+
     content = (
         "@echo off\r\n"
         "chcp 65001 >nul\r\n"
@@ -656,6 +847,8 @@ def write_wrapper(st_dir: Path, sub_code: str, voice_code: str) -> Path:
         "\r\n"
         "REM Also overwrite Forza's saved UI language so the in-game setting is auto-set\r\n"
         f"{pref_block}"
+        "\r\n"
+        f"{intro_block}"
         "\r\n"
         "%*\r\n"
     )
@@ -704,8 +897,8 @@ class App(tk.Tk):
         self._text_refs: list[tuple] = []
 
         self.title(f"{self.t('app_name')}  v{APP_VERSION}")
-        self.geometry("680x640")
-        self.minsize(680, 640)
+        self.geometry("700x820")
+        self.minsize(700, 820)
 
         self._build_menubar()
         self._build_ui()
@@ -831,6 +1024,34 @@ class App(tk.Tk):
         bo = ttk.Button(wbtn, command=self._open_config_dir, width=20)
         self._track(bo, "btn_open_config")
         bo.pack(side="left", padx=(8, 0))
+
+        # ---- Intro Skip frame
+        intro = ttk.LabelFrame(self)
+        self._track(intro, "frame_intro")
+        intro.pack(fill="x", **pad)
+        intro_desc = ttk.Label(intro, foreground="#444", justify="left", wraplength=620)
+        self._track(intro_desc, "intro_desc")
+        intro_desc.pack(anchor="w", padx=8, pady=(6, 2))
+        self.skip_studio_var = tk.BooleanVar(value=bool(self.cfg.get("skip_studio", False)))
+        self.skip_title_var = tk.BooleanVar(value=bool(self.cfg.get("skip_title", False)))
+        cb1 = ttk.Checkbutton(intro, variable=self.skip_studio_var)
+        self._track(cb1, "chk_skip_studio")
+        cb1.pack(anchor="w", padx=8, pady=1)
+        cb2 = ttk.Checkbutton(intro, variable=self.skip_title_var)
+        self._track(cb2, "chk_skip_title")
+        cb2.pack(anchor="w", padx=8, pady=1)
+        self.intro_status_var = tk.StringVar(value="—")
+        ttk.Label(intro, textvariable=self.intro_status_var,
+                  foreground="#0066aa", wraplength=620, justify="left").pack(
+            fill="x", padx=8, pady=(4, 0))
+        ibtns = ttk.Frame(intro)
+        ibtns.pack(fill="x", padx=8, pady=(4, 8))
+        ibap = ttk.Button(ibtns, command=self._do_intro_apply, width=14)
+        self._track(ibap, "btn_intro_apply")
+        ibap.pack(side="left")
+        ibre = ttk.Button(ibtns, command=self._do_intro_restore_all, width=14)
+        self._track(ibre, "btn_intro_restore_all")
+        ibre.pack(side="left", padx=(8, 0))
 
         # ---- Log
         self.logf = ttk.LabelFrame(self)
@@ -972,6 +1193,7 @@ class App(tk.Tk):
             lines.append(self.t("status_all_original"))
         self.status_var.set("\n".join(lines))
         self._update_wrapper_ui()
+        self._refresh_intro_status()
 
     def _selected_codes(self) -> tuple[str | None, str | None]:
         sub = LABEL_TO_CODE.get(self.sub_var.get())
@@ -1020,6 +1242,59 @@ class App(tk.Tk):
             messagebox.showerror(self.t("app_name"), str(e))
         self._refresh_status()
 
+    # ---- intro skip
+    def _refresh_intro_status(self):
+        if self.st_dir is None:
+            self.intro_status_var.set("—")
+            return
+        videos = videos_dir(self.st_dir)
+        states = {g: intro_group_state(videos, g) for g in INTRO_VIDEO_GROUPS}
+        def label(s: str) -> str:
+            return self.t(f"intro_status_{s}") if s in ("normal", "skipped", "mixed", "absent") else s
+        self.intro_status_var.set(self.t(
+            "intro_status_line",
+            studio=label(states.get("studio_splash", "absent")),
+            title=label(states.get("title_screen", "absent")),
+        ))
+
+    def _do_intro_apply(self):
+        if self.st_dir is None:
+            messagebox.showwarning(self.t("app_name"), self.t("dlg_warn_set_path"))
+            return
+        videos = videos_dir(self.st_dir)
+        wanted = {
+            "studio_splash": self.skip_studio_var.get(),
+            "title_screen": self.skip_title_var.get(),
+        }
+        for group, should_skip in wanted.items():
+            if should_skip:
+                for key, kw in skip_intro_group(videos, group):
+                    self._log_key(key, **kw)
+            else:
+                # If user unticked a previously-skipped group, restore it.
+                state = intro_group_state(videos, group)
+                if state in ("skipped", "mixed"):
+                    for key, kw in restore_intro_group(videos, group):
+                        self._log_key(key, **kw)
+        self.cfg["skip_studio"] = self.skip_studio_var.get()
+        self.cfg["skip_title"] = self.skip_title_var.get()
+        save_config(self.cfg)
+        self._refresh_intro_status()
+
+    def _do_intro_restore_all(self):
+        if self.st_dir is None:
+            messagebox.showwarning(self.t("app_name"), self.t("dlg_warn_set_path"))
+            return
+        videos = videos_dir(self.st_dir)
+        for key, kw in restore_all_intros(videos):
+            self._log_key(key, **kw)
+        self.skip_studio_var.set(False)
+        self.skip_title_var.set(False)
+        self.cfg["skip_studio"] = False
+        self.cfg["skip_title"] = False
+        save_config(self.cfg)
+        self._refresh_intro_status()
+
     def _do_setup_wrapper(self):
         if self.st_dir is None:
             messagebox.showwarning(self.t("app_name"), self.t("dlg_warn_set_path"))
@@ -1032,7 +1307,11 @@ class App(tk.Tk):
             messagebox.showwarning(self.t("app_name"), self.t("dlg_warn_select_langs"))
             return
         try:
-            wrapper = write_wrapper(self.st_dir, sub, voice)
+            wrapper = write_wrapper(
+                self.st_dir, sub, voice,
+                skip_studio=bool(self.skip_studio_var.get()),
+                skip_title=bool(self.skip_title_var.get()),
+            )
         except Exception as e:
             messagebox.showerror(self.t("app_name"),
                                  self.t("dlg_wrapper_setup_failed", err=str(e)))
