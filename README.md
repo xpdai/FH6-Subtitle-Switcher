@@ -126,6 +126,11 @@ build.bat
 進遊戲不用再調語言，會直接是這個組合。
 ```
 
+> 📧 **信箱 / 新聞等伺服器動態文字會跟著語音語言走**
+> 例如「英文字 + 德語音」時，Forza 信箱仍會是德文。這是 FH6 的已知限制，詳見下方「已知限制」章節。
+>
+> 📧 **Server-fetched mail/news follow the voice language.** For example, "EN subs + DE voice" still shows German mail. See the Known Limitations section below.
+
 ### 第四步：開遊戲
 
 **完全關閉**遊戲（不只是回主選單）後，直接從 Steam 啟動 FH6。
