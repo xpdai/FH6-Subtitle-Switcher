@@ -1,7 +1,7 @@
 # FH6 Subtitle Switcher 🌐
 
-> **Forza Horizon 6 Subtitle / Voice Switcher & Intro Skipper**
-> **《極限競速：地平線 6》字幕語音切換 + 跳過開頭動畫工具**
+> **Legacy Forza Horizon 6 Subtitle / Voice Switcher & Intro Skipper**
+> **《極限競速：地平線 6》舊版字幕語音切換 + 跳過開頭動畫工具**
 
 [![Language](https://img.shields.io/badge/Language-Python%203.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -10,14 +10,24 @@
 [![Game Version](https://img.shields.io/badge/Game-Steam%20%7C%20MS%20Store-1b2838.svg)]()
 [![UI Language](https://img.shields.io/badge/UI-Chinese%20%7C%20English-success.svg)]()
 
+## ⚠️ 專案狀態 / Project Status
+
+自 **2026 年 9 月 7 日 Series 5 更新**起，Forza Horizon 6 已原生支援分別設定語音與字幕語言。使用最新版遊戲時，請優先使用遊戲內建選項，不再需要本工具的語言檔交換功能。詳見 [Forza 官方更新公告](https://forza.net/news/forza-horizon-6-series-5)。
+
+本專案現以**維護模式**保留，供舊版本參考及使用「跳過開頭動畫」功能；後者尚未在 Series 5 重新驗證。若你曾設定 Steam 啟動補套，請先依照[轉回官方功能](#轉回官方功能--migrate-to-the-native-option)步驟還原遊戲檔案與啟動選項。
+
+As of the **September 7, 2026 Series 5 update**, Forza Horizon 6 natively supports separate voice and subtitle languages. On an up-to-date game installation, use the in-game option instead of this tool's language-file swapping feature. See the [official Forza update announcement](https://forza.net/news/forza-horizon-6-series-5).
+
+This project is now in **maintenance mode** for legacy reference and its intro-skipping feature; the latter has not been retested on Series 5. If you configured the Steam launch wrapper, follow [Migrate to the native option](#轉回官方功能--migrate-to-the-native-option) first to restore the game files and launch options.
+
 <p align="center">
   <img src="docs/screenshot_gui_zh.png" alt="Chinese GUI" width="49%"/>
   <img src="docs/screenshot_gui_en.png" alt="English GUI" width="49%"/>
 </p>
 
-> ✅ **平台支援 / Platform Support**
-> 已驗證支援 **Steam 版**和 **Microsoft Store / Xbox PC App 版**（MS Store 需手動指定路徑，且使用前要先安裝想用的語言包；詳見[平台相容性](#-平台相容性--platform-compatibility)章節）。Xbox 主機版無法支援。
-> Verified for **Steam** and **Microsoft Store / Xbox PC App** (MS Store users need to point the path manually and pre-install desired language packs — see [Platform Compatibility](#-平台相容性--platform-compatibility) for details). Xbox console not supported.
+> ℹ️ **舊版相容性 / Legacy Compatibility**
+> 語言檔交換功能曾在 **Steam 版**和 **Microsoft Store / Xbox PC App 版**通過驗證；Series 5 之後請改用遊戲內建選項。Xbox 主機版無法執行本工具。
+> The language-file swapping feature was verified on **Steam** and **Microsoft Store / Xbox PC App** before Series 5. Current versions should use the native in-game option. Xbox consoles cannot run this tool.
 
 ---
 
@@ -25,27 +35,27 @@
 
 ### 🇹🇼 中文說明
 
-1. **24 × 24 語言任意組合**：把 FH6 的 24 種介面／字幕語言和 24 種語音語言完全解耦，可做出例如「中文字幕 + 日文語音」「中文字幕 + 英文語音」這類官方沒給的搭配。
+1. **舊版 24 × 24 語言任意組合**：為 Series 5 之前的版本提供字幕與語音語言分離；最新版遊戲請改用官方選項。
 2. **工具本身雙語介面**：選單列「語言 / Language」可即時切換繁體中文 / English，啟動時依系統語言自動選擇，選擇會被記住。
 3. **跳過開頭動畫**：兩個獨立勾選 — Studio 片頭 (Microsoft / Turn 10 Logo) 和標題畫面影片 — 分開控制。按「套用」即刻生效，「全部還原」一鍵回到原狀態。
-4. **進遊戲完全不用調**：套用同時把 Forza 的 `UserPreferredLang` 設定檔改成你選的語音代碼，下次直接開遊戲就是你要的組合，**完全不用進設定選語言**。
-3. **自動偵測 Steam 路徑**：讀 Steam 登錄檔與 `libraryfolders.vdf`，跨硬碟也能自動找到 FH6 的 `StringTables` 資料夾，找不到才會請使用者手動指定。
-4. **SHA-256 狀態識別**：用內容雜湊比對告訴你「目前 JP.zip 內容其實是 CHT」、哪些檔已備份、哪些還是原版，狀態一目了然不會搞混。
-5. **自動備份 / 一鍵還原**：第一次套用時把原檔備份到 `StringTables/_backup/`，按「還原全部」即可整批回原樣，Steam 完整性驗證也是後路。
-6. **Steam 啟動補套 (Launch Wrapper)**：產生包裝腳本並把要貼到 Steam 啟動選項的字串複製到剪貼簿，遊戲每次更新後第一次啟動會自動補套，**省去手動再開工具的麻煩**。
-7. **純檔案複製，不碰程序記憶體**：不對遊戲 process 做任何 `ReadProcessMemory` / `WriteProcessMemory`，不掛 hook，不改 DLL，理論上不會觸發 EAC 等反作弊機制。
+4. **舊版免進遊戲調整**：套用時把 Forza 的 `UserPreferredLang` 設定檔改成選定的語音代碼；Series 5 之後請直接使用遊戲內建設定。
+5. **自動偵測 Steam 路徑**：讀 Steam 登錄檔與 `libraryfolders.vdf`，跨硬碟也能自動找到 FH6 的 `StringTables` 資料夾，找不到才會請使用者手動指定。
+6. **SHA-256 狀態識別**：用內容雜湊比對告訴你「目前 JP.zip 內容其實是 CHT」、哪些檔已備份、哪些還是原版，狀態一目了然不會搞混。
+7. **自動備份 / 一鍵還原**：第一次套用時把原檔備份到 `StringTables/_backup/`，按「還原全部」即可整批回原樣，Steam 完整性驗證也是後路。
+8. **舊版 Steam 啟動補套 (Launch Wrapper)**：可在遊戲更新後重新套用語言檔交換；Series 5 之後應移除並改用官方選項。
+9. **純檔案複製，不碰程序記憶體**：不對遊戲 process 做任何 `ReadProcessMemory` / `WriteProcessMemory`，不掛 hook，不改 DLL，理論上不會觸發 EAC 等反作弊機制。
 
 ### 🇬🇧 English Description
 
-1. **24 × 24 Language Combinations**: Fully decouples FH6's 24 UI/subtitle languages from its 24 voice languages, enabling unofficial combos like "Chinese subs + Japanese voice" or "Chinese subs + English voice".
+1. **Legacy 24 × 24 Language Combinations**: Separates subtitle and voice languages on pre-Series 5 builds. Up-to-date installations should use the native option.
 2. **Bilingual GUI (Traditional Chinese / English)**: Pick between the two from the *Language* menu at any time — switches live, with no restart. Defaults to your OS locale on first launch, and the choice is remembered.
 3. **Skip Opening Videos**: Two independent toggles — studio splash (Microsoft / Turn 10 Logo) and the title-screen video — disable each one individually by renaming the underlying `.bk2` files. One-click "Restore All" reverts.
-4. **Zero In-Game Adjustment Required**: When applying a combo, the tool also rewrites Forza's `UserPreferredLang` preference file so the chosen language is auto-selected on next launch — **no in-game language menu fiddling needed**.
-3. **Automatic Steam Path Detection**: Reads the Steam registry key and `libraryfolders.vdf` to locate the FH6 `StringTables` folder across all library drives; falls back to a folder picker only when detection fails.
-4. **SHA-256 State Awareness**: Hash-compares every language zip against known originals and tells you exactly what each slot currently contains (e.g. "JP.zip currently holds CHT content"), so you always know the real state.
-5. **Auto Backup / One-Click Restore**: Original zips are copied to `StringTables/_backup/` on first apply; one button restores everything. Steam's Verify Integrity is always available as a final fallback.
-6. **Steam Launch Wrapper**: Generates a `.bat` wrapper and copies the matching Steam launch-options string to your clipboard. After every Forza update the wrapper auto-reapplies your combo, so **you never have to open the tool again** for repeat use.
-7. **Pure File-Copy Tool, No Memory Hooks**: Performs zero `ReadProcessMemory` / `WriteProcessMemory` calls, no DLL injection, no hooks — should not trigger anti-cheat systems like EAC.
+4. **Legacy No-Menu Setup**: Rewrites Forza's `UserPreferredLang` preference file when applying a combination. On Series 5 or later, use the native in-game setting instead.
+5. **Automatic Steam Path Detection**: Reads the Steam registry key and `libraryfolders.vdf` to locate the FH6 `StringTables` folder across all library drives; falls back to a folder picker only when detection fails.
+6. **SHA-256 State Awareness**: Hash-compares every language zip against known originals and tells you exactly what each slot currently contains (e.g. "JP.zip currently holds CHT content"), so you always know the real state.
+7. **Auto Backup / One-Click Restore**: Original zips are copied to `StringTables/_backup/` on first apply; one button restores everything. Steam's Verify Integrity is always available as a final fallback.
+8. **Legacy Steam Launch Wrapper**: Can reapply the language-file swap after a game update. Remove it on Series 5 or later and use the native option.
+9. **Pure File-Copy Tool, No Memory Hooks**: Performs zero `ReadProcessMemory` / `WriteProcessMemory` calls, no DLL injection, no hooks — should not trigger anti-cheat systems like EAC.
 
 ---
 
@@ -64,6 +74,10 @@ FH6-Subtitle-Switcher/
 ---
 
 ## 🛠️ 安裝與使用 / Installation & Usage
+
+> Series 5 或更新版本若只需要分開設定字幕與語音，請直接使用遊戲內建選項。只有需要舊版相容功能或願意自行確認相容性的「跳過開頭動畫」功能時，才需要安裝本工具。
+>
+> On Series 5 or later, use the in-game setting when you only need separate subtitle and voice languages. Install this tool only for legacy compatibility or the intro-skipping feature after checking compatibility yourself.
 
 ### 🟢 方法 A：直接下載 EXE 用（推薦給一般使用者）
 
@@ -98,7 +112,11 @@ build.bat
 
 ---
 
-## 🚀 使用教學 / Step-by-Step Tutorial
+## 🚀 舊版語言切換教學 / Legacy Language-Switching Tutorial
+
+以下步驟僅保留給 Series 5 之前的遊戲版本。最新版遊戲不需要交換 `StringTables` 檔案。
+
+The steps below are retained for pre-Series 5 game builds. Current versions do not need `StringTables` file swapping.
 
 ### 第一步：偵測 / 設定遊戲路徑
 
@@ -155,6 +173,24 @@ Steam 玩家為了避免每次更新後都得手動再開工具一次，按「**
 
 按「**還原全部**」，工具會把 `_backup/` 內所有檔案還原回去。
 保險的最後一招永遠是：Steam → FH6 → 內容 → 已安裝檔案 → **驗證遊戲檔案完整性**。
+
+---
+
+## 轉回官方功能 / Migrate to the Native Option
+
+如果你曾使用語言交換或 Steam 啟動補套：
+
+1. 完全關閉 FH6。
+2. 在本工具按「**還原全部**」。若無法還原，請用 Steam 或 Xbox App 驗證遊戲檔案。
+3. Steam 使用者到「內容 → 一般 → 啟動選項」，移除指向 `fh6_prelaunch_wrapper.bat` 的字串。
+4. 啟動最新版 FH6，改用遊戲內建的語音與字幕語言選項。
+
+If you previously used language swapping or the Steam launch wrapper:
+
+1. Fully close FH6.
+2. Click **Restore All** in this tool. If restoration is unavailable, verify the game files in Steam or the Xbox App.
+3. On Steam, open **Properties → General → Launch Options** and remove the entry that points to `fh6_prelaunch_wrapper.bat`.
+4. Launch the current FH6 version and configure voice and subtitle languages through the in-game settings.
 
 ---
 
@@ -237,9 +273,13 @@ Closed system — no way to run external `.exe`, no filesystem access. **No work
 
 ---
 
-## ⚠️ 已知限制 / Known Limitations
+## ⚠️ 舊版交換方式的已知限制 / Known Limitation of the Legacy Workaround
 
 ### 伺服器拉的動態文字會跟著語音語言走 / Server-fetched text follows voice language
+
+Series 5 的遊戲內建語音／字幕分離功能已解決這項限制。以下內容僅說明本工具舊版交換方式為何無法處理伺服器動態文字。
+
+The native voice/subtitle option added in Series 5 resolves this limitation. The explanation below is retained only to document why this tool's legacy file-swapping approach could not control server-fetched text.
 
 FH6 只有**一個**語言設定 (`UserPreferredLang`) 同時控制三件事：
 
@@ -253,7 +293,7 @@ FH6 只有**一個**語言設定 (`UserPreferredLang`) 同時控制三件事：
 
 要做到也只剩下：A) 逆向解 CmsCache 加密（每次更新都會壞、又貴又脆）B) MITM HTTPS 改 `Accept-Language`（保證觸發 EAC）C) 改遊戲 exe（百分百觸發 EAC）— 沒一個值得做。
 
-如果 Playground Games 哪天加上音／文分離選項就解了。在那之前這就是固定限制。詳見 [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2)。
+Playground Games 已在 Series 5 加入音／文分離選項。詳見 [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2) 與 [Forza 官方更新公告](https://forza.net/news/forza-horizon-6-series-5)。
 
 ### Server-fetched text follows the voice language
 
@@ -269,7 +309,7 @@ This content is cached locally under `%LOCALAPPDATA%\ForzaHorizon6\CmsCache\` as
 
 The only paths to a real fix are: (a) reverse-engineering and re-encrypting the CMS cache (fragile across patches), (b) MITMing the game's HTTPS traffic (guaranteed to trip EAC), or (c) patching the executable (also EAC-tripping). None are reasonable for a file-copy hobby tool.
 
-Unless / until Playground Games ships separate audio + text language settings, this is a fixed limitation. Details in [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2).
+Playground Games added separate audio and text language settings in Series 5. See [Issue #2](https://github.com/xpdai/FH6-Subtitle-Switcher/issues/2) and the [official Forza update announcement](https://forza.net/news/forza-horizon-6-series-5).
 
 ---
 
@@ -294,7 +334,7 @@ A：本工具完全不對遊戲程序做記憶體讀寫、不修改執行檔，�
 A：請確認三件事：① 遊戲是否完全關閉並重啟（不是只回主選單）② 工具日誌是否顯示「[套用]」與「[設定]」兩行都成功 ③ 防毒是否阻擋了檔案寫入。
 
 **Q：Forza 更新後失效了？**
-A：這是預期行為。請使用「**Steam 啟動補套**」功能，設定一次後永久解決。
+A：Series 5 或更新版本請依照[轉回官方功能](#轉回官方功能--migrate-to-the-native-option)還原檔案，並使用遊戲內建的語音／字幕分離選項。舊版才需要 Steam 啟動補套。
 
 **Q：英文語音為什麼會動兩個檔（EN + GB）？**
 A：FH6 有 US English (`EN.zip`) 和 UK English (`GB.zip`) 兩個英文語音版本。工具會兩個都覆蓋，這樣不論你在遊戲內選哪一個英文選項都能正常顯示中文字幕。
